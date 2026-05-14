@@ -1,0 +1,87 @@
+{
+	"name": "DF_Load_Customers",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_Blob_Customers",
+						"type": "DatasetReference"
+					},
+					"name": "RawCustomers"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_SQL_dimCustomer",
+						"type": "DatasetReference"
+					},
+					"name": "sinkCustomers",
+					"description": "Export data to DS_SQL_dimCustomers"
+				}
+			],
+			"transformations": [
+				{
+					"name": "withFullName"
+				},
+				{
+					"name": "select1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CustomerId as string,",
+				"          FirstName as string,",
+				"          LastName as string,",
+				"          Email as string,",
+				"          Phone as string,",
+				"          City as string,",
+				"          State as string,",
+				"          Country as string,",
+				"          CustomerSegment as string,",
+				"          JoinDate as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> RawCustomers",
+				"RawCustomers derive(FullName = concat(trim(FirstName),' ', trim(LastName))) ~> withFullName",
+				"withFullName select(mapColumn(",
+				"          CustomerId,",
+				"          Email,",
+				"          City,",
+				"          State,",
+				"          Country,",
+				"          CustomerSegment,",
+				"          JoinDate,",
+				"          FullName",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select1",
+				"select1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          CustomerId as string,",
+				"          FullName as string,",
+				"          Email as string,",
+				"          City as string,",
+				"          State as string,",
+				"          Country as string,",
+				"          CustomerSegment as string,",
+				"          JoinDate as date,",
+				"          LoadedAt as timestamp",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     preSQLs:['truncate table dim_customers'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> sinkCustomers"
+			]
+		}
+	}
+}

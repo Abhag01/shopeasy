@@ -1,0 +1,89 @@
+{
+	"name": "PL_MasterPipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "LoadDimention",
+				"description": "This pipeline is for loading the Dimention ",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_LoadDimention",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Load_CleansedOrders",
+				"description": "This pipeline is for loading the Order Fact Table",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "LoadDimention",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_TransformOrders",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "LoadtheEnricheddata",
+				"description": "To insert the pending blank data into SQL",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Load_CleansedOrders",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:30:00",
+					"retry": 2,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_EnrichOrders",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"parameters": {
+			"Master": {
+				"type": "string",
+				"defaultValue": "Full"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-05-12T06:35:57Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
